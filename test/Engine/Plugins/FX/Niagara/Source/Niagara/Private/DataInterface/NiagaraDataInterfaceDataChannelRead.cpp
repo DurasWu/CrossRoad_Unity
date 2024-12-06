@@ -90,9 +90,9 @@ namespace NDIDataChannelReadLocal
 		SHADER_PARAMETER(int32, FloatStride)
 		SHADER_PARAMETER(int32, Int32Stride)
 		SHADER_PARAMETER(int32, HalfStride)
-#if USE_UE5_4_NDC
+//#if USE_UE5_4_NDC
 		SHADER_PARAMETER_RDG_BUFFER_SRV(Buffer<int32>, NDCSpawnDataBuffer)
-#endif
+//#endif
 	END_SHADER_PARAMETER_STRUCT()
 }
 
@@ -366,6 +366,13 @@ bool FNDIDataChannelReadInstanceData::PostTick(UNiagaraDataInterfaceDataChannelR
 UNiagaraDataInterfaceDataChannelRead::UNiagaraDataInterfaceDataChannelRead(FObjectInitializer const& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
+
+#if USE_UE5_4_NDC
+	bOverrideSpawnGroupToDataChannelIndex = false;
+#else
+	bOverrideSpawnGroupToDataChannelIndex = true;
+#endif
+
 	Proxy.Reset(new FNiagaraDataInterfaceProxy_DataChannelRead());
 	EmitterBinding.BindingMode = ENiagaraDataInterfaceEmitterBindingMode::Self;
 	SpawnInfoName = NDIDataChannelReadLocal::SpawnInfoName;
@@ -1684,7 +1691,9 @@ void UNiagaraDataInterfaceDataChannelRead::GetCommonHLSL(FString& OutHLSL)
 bool UNiagaraDataInterfaceDataChannelRead::GetFunctionHLSL(FNiagaraDataInterfaceHlslGenerationContext& HlslGenContext, FString& OutHLSL)
 {
 	return	HlslGenContext.GetFunctionInfo().DefinitionName == GET_FUNCTION_NAME_CHECKED(UNiagaraDataInterfaceDataChannelRead, Num) ||
+#if USE_UE5_4_NDC
 		HlslGenContext.GetFunctionInfo().DefinitionName == GET_FUNCTION_NAME_CHECKED(UNiagaraDataInterfaceDataChannelRead, GetNDCSpawnData) ||
+#endif
 		HlslGenContext.GetFunctionInfo().DefinitionName == GET_FUNCTION_NAME_CHECKED(UNiagaraDataInterfaceDataChannelRead, Read) ||
 		HlslGenContext.GetFunctionInfo().DefinitionName == GET_FUNCTION_NAME_CHECKED(UNiagaraDataInterfaceDataChannelRead, Consume);
 }
@@ -2004,6 +2013,8 @@ void UNiagaraDataInterfaceDataChannelRead::SetShaderParameters(const FNiagaraDat
 #else
 				if (ParameterLayoutBuffer.SRV.IsValid() && ParameterLayoutBuffer.NumBytes > 0)
 				{
+					FRDGBufferRef DummyBuffer = GSystemTextures.GetDefaultBuffer(Context.GetGraphBuilder(), 4, 0u);
+					InstParameters->NDCSpawnDataBuffer = Context.GetGraphBuilder().CreateSRV(DummyBuffer, PF_R32_SINT);
 
 #endif
 					InstParameters->ParamOffsetTable = ParameterLayoutBuffer.SRV.IsValid() ? ParameterLayoutBuffer.SRV.GetReference() : FNiagaraRenderer::GetDummyUIntBuffer();
@@ -2034,11 +2045,10 @@ void UNiagaraDataInterfaceDataChannelRead::SetShaderParameters(const FNiagaraDat
 		InstParameters->Int32Stride = 0;
 		InstParameters->HalfStride = 0;
 
-#if USE_UE5_4_NDC
-
+//#if USE_UE5_4_NDC
 		FRDGBufferRef DummyBuffer = GSystemTextures.GetDefaultBuffer(Context.GetGraphBuilder(), 4, 0u);
-		InstParameters->NDCSpawnDataBuffer = Context.GetGraphBuilder().CreateSRV(DummyBuffer);
-#endif
+		InstParameters->NDCSpawnDataBuffer = Context.GetGraphBuilder().CreateSRV(DummyBuffer, PF_R32_SINT);
+//#endif
 	}
 }
 

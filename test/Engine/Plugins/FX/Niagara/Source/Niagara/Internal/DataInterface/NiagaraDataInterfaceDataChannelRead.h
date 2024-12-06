@@ -59,6 +59,7 @@ protected:
 
 public:
 
+
 	//TODO: In future we may allow reads and writes that stay local to a single system.	
 // 	/** The scope at which to read data. When reading locally we'll read directly from a Data Channel Write Interface in this or another emitter. When reading from World scope, we'll read from a named Data Channel. */
 // 	UPROPERTY(EditAnywhere, Category = "Data Channel")
@@ -96,7 +97,7 @@ public:
 	/** When true, Emitter.Spawn group for any spawned particles will be overridden to the index of the data channel element that generated that spawn. This allows particles to read further data from the data channel element that generated them. */
 
 	UPROPERTY(EditAnywhere, Category = "Spawning", AdvancedDisplay)
-	bool bOverrideSpawnGroupToDataChannelIndex = false;   //for USE_UE5_4_NDC
+	bool bOverrideSpawnGroupToDataChannelIndex = true;   
 	
 
 

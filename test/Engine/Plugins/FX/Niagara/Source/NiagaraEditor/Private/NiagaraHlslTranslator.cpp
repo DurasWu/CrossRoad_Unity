@@ -812,6 +812,7 @@ FString TNiagaraHlslTranslator<GraphBridge>::BuildParameterMapHlslDefinitions(TA
 		UniqueVariables.AddUnique(Var);
 	}
 	
+#if USE_UE5_4_NDC
 	//Add any special case engine provided values in the param maps. These are not uniforms but engine provided things like Engine.ExecIndex and Engine.Emitter.ID.
 	for (FNiagaraVariable& Var : ParamMapDefinedEngineVars)
 	{
@@ -819,9 +820,9 @@ FString TNiagaraHlslTranslator<GraphBridge>::BuildParameterMapHlslDefinitions(TA
 		{
 			continue;
 		}
-
 		UniqueVariables.AddUnique(Var);
 	}
+#endif
 
 	bool bIsSpawnScript = IsSpawnScript();
 
@@ -1585,9 +1586,10 @@ FNiagaraTranslateResults TNiagaraHlslTranslator<GraphBridge>::Translate(const FN
 
 	PerStageMainPreSimulateChunks.SetNum(TranslationStages.Num());
 
-	//todo...
+#if USE_UE5_4_NDC
 	ParamMapDefinedEngineVars.Emplace(SYS_PARAM_ENGINE_EXEC_INDEX);
 	ParamMapDefinedEngineVars.Emplace(SYS_PARAM_ENGINE_EMITTER_ID);
+#endif
 
 	// Get all the parameter map histories traced to this graph from output nodes. We'll revisit this shortly in order to build out just the ones we care about for this translation.
 	if (ParamMapHistories.Num() == 1 && OtherOutputParamMapHistories.Num() == 1 && (CompileOptions.TargetUsage == ENiagaraScriptUsage::Function || CompileOptions.TargetUsage == ENiagaraScriptUsage::DynamicInput))
@@ -3196,8 +3198,9 @@ void TNiagaraHlslTranslator<GraphBridge>::DefineMainGPUFunctions(
 			HlslOutput += ContextName + TEXT("Particles.ID.Index = IDIndex;\n");
 			HlslOutput += ContextName + TEXT("Particles.ID.AcquireTag = IDAcquireTag;\n");
 		}
-
+#if USE_UE5_4_NDC
 		HlslOutput += FString::Printf(TEXT("\t%sEngine.Emitter.ID.ID = %d;\n"), *ContextName, EmitterID.ID);
+#endif
 	}
 	HlslOutput += TEXT("}\n\n");
 
@@ -3290,8 +3293,9 @@ void TNiagaraHlslTranslator<GraphBridge>::DefineMainGPUFunctions(
 			{
 				HlslOutput += ContextName + TEXT("DataInstance.Alive=true;\n");
 			}
-
+#if USE_UE5_4_NDC
 			HlslOutput += FString::Printf(TEXT("\t%sEngine.Emitter.ID.ID = %d;\n"), *ContextName, EmitterID.ID);
+#endif
 		}
 	}
 	HlslOutput += TEXT("}\n\n");
@@ -3808,9 +3812,11 @@ void FNiagaraHlslTranslator::DefineMain(FString &OutHlslOutput,
 			}
 		}
 
+#if USE_UE5_4_NDC
 		//Set Engine provided param map values.
 		OutHlslOutput += FString::Printf(TEXT("\tContext.%s.Engine.ExecIndex = ExecIndex();\n"), *TranslationStages[StageIdx].PassNamespace);
 		OutHlslOutput += FString::Printf(TEXT("\tContext.%s.Engine.Emitter.ID.ID = %d;\n"), *TranslationStages[StageIdx].PassNamespace, EmitterID.ID);
+#endif
 
 		FName ScopeName(TranslationStages[StageIdx].PassNamespace + TEXT("Main"));
 		EnterStatsScope(FNiagaraStatScope(*(CompileOptions.GetName() + TEXT("_") + ScopeName.ToString()), ScopeName), OutHlslOutput);
@@ -6442,7 +6448,7 @@ void TNiagaraHlslTranslator<GraphBridge>::Emitter(const FEmitterNode* EmitterNod
 		if (ParamMapHistoryIdx != -1 && ParamMapHistoryIdx < ParamMapHistories.Num())
 		{
 
-#if 1  //todo
+#if USE_UE5_4_NDC
 			FParamMapHistory& History = ParamMapHistories[ParamMapHistoryIdx];
 
 			//Set some special case values that the engine provides directly
