@@ -1,0 +1,66 @@
+// Copyright 2024 Lazy Marmot Games. All Rights Reserved.
+
+//following macros must be defined by CustomNode
+//#define CUSTOM_NODE_VS 0	//true if its vertex shader
+//#define CUSTOM_NODE_NUM_FLOAT 1
+
+#if VF_ALLEGRO 
+
+#if CUSTOM_NODE_VS
+uint instanceId = Parameters.InstanceId;
+#else
+uint instanceId = asuint(Parameters.PerInstanceParams.x);
+#endif
+
+#if MATERIALBLENDING_ANY_TRANSLUCENT
+uint dataIndex = AllegroVF.ElementIndices[AllegroVF.InstanceEndOffset - instanceId] * AllegroVF.NumCustomDataFloats;
+#else
+uint dataIndex = AllegroVF.ElementIndices[AllegroVF.InstanceOffset + instanceId] * AllegroVF.NumCustomDataFloats;
+#endif
+	
+return AllegroVF.Instance_CustomData[dataIndex + CustomDataIndex];
+
+
+#else
+
+#if VF_USE_PRIMITIVE_SCENE_DATA && USES_PER_INSTANCE_CUSTOM_DATA
+    const uint FloatIndex = uint(CustomDataIndex);
+    BRANCH
+    if (FloatIndex < Parameters.CustomDataCount)
+    {
+        const uint   Float4Offset = Parameters.CustomDataOffset + (FloatIndex >> 2u);
+        const float4 Float4Packed = LoadInstancePayloadDataElement(Float4Offset);
+        return Float4Packed[FloatIndex & 0x3u];
+    }
+#elif USE_INSTANCING && USES_PER_INSTANCE_CUSTOM_DATA
+    const uint FloatIndex = uint(CustomDataIndex);
+    BRANCH
+    if (FloatIndex < InstanceVF.NumCustomDataFloats)
+    {
+
+#if CUSTOM_NODE_VS
+        const uint InstanceDataIndex = Parameters.InstanceId + Parameters.InstanceOffset;
+#else 
+        const uint InstanceDataIndex = asuint(Parameters.PerInstanceParams.w);
+#endif
+
+        const uint BufferStartIndex = InstanceDataIndex * InstanceVF.NumCustomDataFloats;
+        return InstanceVF.InstanceCustomDataBuffer[BufferStartIndex + FloatIndex];
+    }
+#endif
+
+#endif
+
+#undef CUSTOM_NODE_VS
+
+
+return DefaultValue;
+
+
+
+
+
+
+
+
+
